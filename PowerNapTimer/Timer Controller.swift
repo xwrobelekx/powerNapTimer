@@ -13,6 +13,8 @@ class TimerController {
     var timeRemaining: TimeInterval?
     var timer: Timer?
     
+    static let shared = TimerController()
+    
     
     var isOn : Bool {
         
@@ -26,7 +28,7 @@ class TimerController {
     }
     
     
-    //presents time in a readable to human manner
+    //presents time in a readable to human manner as a string
     func timeAsString() -> String{
         
         //first round it off to int value since time interval is double
@@ -37,7 +39,6 @@ class TimerController {
         let seconds = timeRemaining - (minutes / 60)
         
         
-         
         return "\(minutes) : \(seconds)"
     }
     
@@ -45,18 +46,22 @@ class TimerController {
     func secondTick() {
         //checks if we have time remaining
         guard let timeRemaining = timeRemaining else {return}
+        print("time remaining \(timeRemaining)")
         
         //make sure that the time remiining is positive, so it doesnt tun into negatives
         if timeRemaining > 0 {
             
+            print("time is running....")
             self.timeRemaining = timeRemaining - 1
             print(timeRemaining)
+            
             
             //if time runs out (gets to 0)
         } else {
             //need to stop the timer
+            print("runned out of seconds, - stopping timer")
             timer?.invalidate()
-            //set the time remaining to 0
+            //set the time remaining to nil not 0
             self.timeRemaining = nil
             
         }
@@ -70,6 +75,7 @@ class TimerController {
     func startTimer(time: TimeInterval){
         //first check if the timer is on
         if !isOn {
+            print("timer is on")
             //if timer is not set then set the time to the remaining time (how long is this timer run for)
             timeRemaining = time
             
@@ -91,6 +97,7 @@ class TimerController {
     func stopTimer() {
         //first we need to chack if the timer is on
         if isOn {
+            print("timer is running, now were stopping it manually.")
             //then we can stop the timer
             timer?.invalidate()
             
