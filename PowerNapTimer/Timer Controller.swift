@@ -7,9 +7,71 @@
 //
 
 import Foundation
+import UserNotifications
+
+//#1 step one declare protocol
+protocol TimerControllerDelegate: class{
+    //#4
+    var identifier : String {get}
+    var timeRemaining: TimeInterval? {get set}
+    
+    func timerSecondTick()
+    func timerCompleted()
+    func timerStopped()
+    
+    
+}
+
+
+extension TimerControllerDelegate {
+    
+    //default inplemetation of a function
+    func scheduleLocalNotification(){
+        
+        //#9 content for notification request
+        let notificationContent = UNMutableNotificationContent()
+        notificationContent.title = "Wake UP"
+        notificationContent.body = "No... Seriously Wake up"
+        
+        guard let timeRemaining = TimerController.shared.timeRemaining else {return}
+        
+        //#8 date "since" return the date of when the code runs
+        let date = Date(timeInterval: timeRemaining, since: Date())
+        
+        //#7
+        let dateComponents = Calendar.current.dateComponents([.minute, .second], from: date)
+        
+        //#6
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+        
+        //#2.1 every notification need unique identifier uuid set it in protocol and confrom to it in VC
+        let request = UNNotificationRequest(identifier: identifier, content: notificationContent, trigger: trigger)
+        
+        
+        //#1
+        UNUserNotificationCenter.current().add(request) { (error) in
+            if let error = error {
+                print("Unable to add Notification Request. \(error), \(error.localizedDescription)")
+            }
+        }
+        //#2 lookup UNNotificationrequest
+        
+    }
+    
+}
+
+
+
+
+
+
+
+
 
 
 class TimerController {
+    //#3
+    var identifier = "PowerNapTimerIdentyfier"
     var timeRemaining: TimeInterval?
     var timer: Timer?
     
@@ -27,6 +89,9 @@ class TimerController {
         }
     }
     
+    //#2 the hook?
+    weak var delegate : TimerControllerDelegate?
+    
     
     //presents time in a readable to human manner as a string
     func timeAsString() -> String{
@@ -36,10 +101,12 @@ class TimerController {
         //pull minutes form time remaining
         let minutes = timeRemaining / 60
         //pull the remaining seconds
-        let seconds = timeRemaining - (minutes / 60)
+        let seconds = timeRemaining - (minutes * 60)
         
-        
-        return "\(minutes) : \(seconds)"
+        //this is an initializer for string, which return better formated string
+        // the 2 stands for how many digits, and d replaces the value with the one from array
+        //and array holds the minutes and seconds
+        return String(format: "%02d : %02d", arguments: [minutes, seconds])
     }
     
     //what to do as the timer takes on
@@ -53,6 +120,9 @@ class TimerController {
             
             print("time is running....")
             self.timeRemaining = timeRemaining - 1
+            //#3 notifies the parent that the second goes by
+            delegate?.timerSecondTick()
+            
             print(timeRemaining)
             
             
@@ -61,8 +131,12 @@ class TimerController {
             //need to stop the timer
             print("runned out of seconds, - stopping timer")
             timer?.invalidate()
+            
+            
             //set the time remaining to nil not 0
             self.timeRemaining = nil
+            //#3.2 notifie the paternt that the timer completed
+            delegate?.timerCompleted()
             
         }
         
@@ -103,6 +177,8 @@ class TimerController {
             
             //reset the remaining time
             timeRemaining = nil
+            //#3.3 notifie the parent that the timer stopped
+            delegate?.timerStopped()
         }
         
         
